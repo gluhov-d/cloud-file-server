@@ -3,7 +3,7 @@ services:
     image: 'mysql:latest'
     environment:
       - 'MYSQL_DATABASE=cloud_storage'
-      - 'MYSQL_PASSWORD=ScjymDL'
+      - 'MYSQL_PASSWORD=storage'
       - 'MYSQL_ROOT_PASSWORD=root'
       - 'MYSQL_USER=storage'
     ports:

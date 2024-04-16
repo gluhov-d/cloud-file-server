@@ -24,16 +24,20 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.session:spring-session-core")
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
+
+    implementation("com.google.code.findbugs:findbugs:3.0.1")
+    implementation("javax.xml.bind:jaxb-api:2.4.0-b180830.0359")
 
     implementation("io.asyncer:r2dbc-mysql:1.1.3")
     implementation("mysql:mysql-connector-java:8.0.33")
     implementation("org.flywaydb:flyway-core:10.11.0")
     implementation("org.flywaydb:flyway-mysql:10.11.0")
     implementation("org.mapstruct:mapstruct:1.5.5.Final")
+
+    implementation("io.jsonwebtoken:jjwt:0.9.1")
 
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")

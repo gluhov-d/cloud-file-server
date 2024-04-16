@@ -8,20 +8,22 @@ CREATE TABLE users (
                        enabled BOOLEAN  NOT NULL DEFAULT FALSE,
                        created_at TIMESTAMP,
                        updated_at TIMESTAMP,
-                       created_by BIGINT NOT NULL,
-                       modified_by BIGINT NOT NULL,
                        status varchar(50) NOT NULL
 );
 
 CREATE TABLE files (
                        id BIGINT AUTO_INCREMENT PRIMARY KEY,
                        name VARCHAR(255) NOT NULL,
-                       file_path VARCHAR(255) NOT NULL,
+                       location VARCHAR(255) NOT NULL,
+                       user_id BIGINT NOT NULL,
                        status varchar(50) NOT NULL,
                        created_at TIMESTAMP,
                        updated_at TIMESTAMP,
                        created_by BIGINT NOT NULL,
-                       modified_by BIGINT NOT NULL
+                       modified_by BIGINT NOT NULL,
+                       FOREIGN KEY (user_id) REFERENCES users(id),
+                       FOREIGN KEY (created_by) REFERENCES users(id),
+                       FOREIGN KEY (modified_by) REFERENCES users(id)
 );
 
 CREATE TABLE events (
@@ -34,5 +36,7 @@ CREATE TABLE events (
                         created_by BIGINT NOT NULL,
                         modified_by BIGINT NOT NULL,
                         FOREIGN KEY (file_id) REFERENCES files(id),
-                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                        FOREIGN KEY (user_id) REFERENCES users(id),
+                        FOREIGN KEY (created_by) REFERENCES users(id),
+                        FOREIGN KEY (modified_by) REFERENCES users(id)
 );
