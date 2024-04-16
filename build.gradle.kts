@@ -6,10 +6,10 @@ plugins {
 }
 
 group = "com.github.gluhov"
-version = "0.0.1-SNAPSHOT"
+version = "1.0.0"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_22
+    sourceCompatibility = JavaVersion.VERSION_21
 }
 
 configurations {
@@ -23,15 +23,26 @@ repositories {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.springframework.session:spring-session-core")
+    implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
+
+    implementation("io.asyncer:r2dbc-mysql:1.1.3")
+    implementation("mysql:mysql-connector-java:8.0.33")
+    implementation("org.flywaydb:flyway-core:10.11.0")
+    implementation("org.flywaydb:flyway-mysql:10.11.0")
+    implementation("org.mapstruct:mapstruct:1.5.5.Final")
+
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")
-    runtimeOnly("com.mysql:mysql-connector-j")
+
     annotationProcessor("org.projectlombok:lombok")
+    annotationProcessor("org.mapstruct:mapstruct-processor:1.5.5.Final")
+
     providedRuntime("org.springframework.boot:spring-boot-starter-tomcat")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.springframework.security:spring-security-test")

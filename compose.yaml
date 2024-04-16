@@ -1,10 +1,10 @@
 services:
-  mysql:
+  db:
     image: 'mysql:latest'
     environment:
-      - 'MYSQL_DATABASE=mydatabase'
-      - 'MYSQL_PASSWORD=secret'
-      - 'MYSQL_ROOT_PASSWORD=verysecret'
-      - 'MYSQL_USER=myuser'
+      - 'MYSQL_DATABASE=cloud_storage'
+      - 'MYSQL_PASSWORD=ScjymDL'
+      - 'MYSQL_ROOT_PASSWORD=root'
+      - 'MYSQL_USER=storage'
     ports:
-      - '3306'
+      - 55724:3306

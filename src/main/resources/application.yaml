@@ -1,0 +1,13 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: cloud-file-server
+  r2dbc:
+    url: r2dbc:pool:mysql://localhost:55724/cloud_storage
+    username: storage
+    password: ScjymDL
+  flyway:
+    url: jdbc:mysql://localhost:55724/cloud_storage
+    locations: classpath:db/migration
