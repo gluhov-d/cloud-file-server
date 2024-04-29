@@ -1,5 +1,6 @@
 package com.github.gluhov.cloudfileserver.config;
 
+import com.github.gluhov.cloudfileserver.model.UserRole;
 import com.github.gluhov.cloudfileserver.security.AuthenticationManager;
 import com.github.gluhov.cloudfileserver.security.BearerTokenServerAuthenticationConverter;
 import com.github.gluhov.cloudfileserver.security.JwtHandler;
@@ -26,13 +27,16 @@ public class WebSecurityConfig {
     private String secret;
 
     private final String[] publicRoutes = {"/api/v1/auth/register", "/api/v1/auth/login"};
-
+    private final String[] adminRoutes = {"/api/v1/admin/**"};
+    private final String[] moderator = {"/api/v1/moderator/**"};
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http, AuthenticationManager authenticationManager) {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange((authz) -> authz
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
+                        .pathMatchers(adminRoutes).hasRole(UserRole.ADMIN.name())
+                        .pathMatchers(moderator).hasRole(UserRole.MODERATOR.name())
                         .pathMatchers(publicRoutes).permitAll()
                         .anyExchange().authenticated()
                 )

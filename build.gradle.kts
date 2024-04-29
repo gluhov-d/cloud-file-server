@@ -31,6 +31,10 @@ dependencies {
     implementation("com.google.code.findbugs:findbugs:3.0.1")
     implementation("javax.xml.bind:jaxb-api:2.4.0-b180830.0359")
 
+    implementation("io.awspring.cloud:spring-cloud-aws-starter:3.2.0-M1")
+    implementation("io.awspring.cloud:spring-cloud-aws-s3:3.2.0-M1")
+    implementation("com.amazonaws:aws-java-sdk-s3:1.12.701")
+
     implementation("io.asyncer:r2dbc-mysql:1.1.3")
     implementation("mysql:mysql-connector-java:8.0.33")
     implementation("org.flywaydb:flyway-core:10.11.0")

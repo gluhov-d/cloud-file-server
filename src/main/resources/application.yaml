@@ -4,6 +4,13 @@ server:
 spring:
   application:
     name: cloud-file-server
+  cloud:
+    aws:
+      credentials:
+        access-key: ${access-key}
+        secret-key: ${secret-key}
+      region:
+        static: us-east-1
   r2dbc:
     url: r2dbc:pool:mysql://localhost:55724/cloud_storage
     username: storage
@@ -11,12 +18,15 @@ spring:
   flyway:
     url: jdbc:mysql://localhost:55724/cloud_storage
     locations: classpath:db/migration
+s3:
+  bucket: gluhov-file-storage
+  region: us-east-1
 jwt:
   password:
     encoder:
-      secret: FZK2DZ82odqS13e8aENggaMbb_fAkl-nJL4AEVBX43g
+      secret: ${encoder-secret}
       iteration: 64
       keylength: 256
-  secret: b5f59337a612a2a7dc07328f3e7d1a04722967c7f06df20a499a7d3f91ff2a7e
+  secret: ${jwt-secret}
   expiration: 3600
   issuer: gluhov

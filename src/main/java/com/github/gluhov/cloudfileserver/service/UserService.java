@@ -21,7 +21,12 @@ public class UserService {
 
     public Mono<User> registerUser(User user) {
         return userRepository.save(
-                user.toBuilder()
+                User.builder()
+                        .firstName(user.getFirstName())
+                        .username(user.getUsername())
+                        .lastName(user.getLastName())
+                        .createdBy("")
+                        .modifiedBy("")
                         .password(passwordEncoder.encode(user.getPassword()))
                         .role(UserRole.USER)
                         .enabled(true)

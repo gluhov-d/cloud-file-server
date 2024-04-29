@@ -8,7 +8,9 @@ CREATE TABLE users (
                        enabled BOOLEAN  NOT NULL DEFAULT FALSE,
                        created_at TIMESTAMP,
                        updated_at TIMESTAMP,
-                       status varchar(50) NOT NULL
+                       status varchar(50) NOT NULL,
+                       created_by VARCHAR(255),
+                       modified_by VARCHAR(255)
 );
 
 CREATE TABLE files (
@@ -19,11 +21,9 @@ CREATE TABLE files (
                        status varchar(50) NOT NULL,
                        created_at TIMESTAMP,
                        updated_at TIMESTAMP,
-                       created_by BIGINT NOT NULL,
-                       modified_by BIGINT NOT NULL,
-                       FOREIGN KEY (user_id) REFERENCES users(id),
-                       FOREIGN KEY (created_by) REFERENCES users(id),
-                       FOREIGN KEY (modified_by) REFERENCES users(id)
+                       created_by VARCHAR(255),
+                       modified_by VARCHAR(255),
+                       FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE events (
@@ -33,10 +33,8 @@ CREATE TABLE events (
                         status varchar(50) NOT NULL,
                         created_at TIMESTAMP,
                         updated_at TIMESTAMP,
-                        created_by BIGINT NOT NULL,
-                        modified_by BIGINT NOT NULL,
+                        created_by VARCHAR(255),
+                        modified_by VARCHAR(255),
                         FOREIGN KEY (file_id) REFERENCES files(id),
-                        FOREIGN KEY (user_id) REFERENCES users(id),
-                        FOREIGN KEY (created_by) REFERENCES users(id),
-                        FOREIGN KEY (modified_by) REFERENCES users(id)
+                        FOREIGN KEY (user_id) REFERENCES users(id)
 );
