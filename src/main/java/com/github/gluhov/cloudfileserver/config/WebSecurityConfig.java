@@ -35,8 +35,8 @@ public class WebSecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .authorizeExchange((authz) -> authz
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
-                        .pathMatchers(adminRoutes).hasRole(UserRole.ADMIN.name())
-                        .pathMatchers(moderator).hasRole(UserRole.MODERATOR.name())
+                        .pathMatchers(adminRoutes).hasAuthority(UserRole.ADMIN.name())
+                        .pathMatchers(moderator).hasAuthority(UserRole.MODERATOR.name())
                         .pathMatchers(publicRoutes).permitAll()
                         .anyExchange().authenticated()
                 )
@@ -59,6 +59,5 @@ public class WebSecurityConfig {
         bearerAuthenticationFilter.setRequiresAuthenticationMatcher(ServerWebExchangeMatchers.pathMatchers("/**"));
 
         return bearerAuthenticationFilter;
-
     }
 }

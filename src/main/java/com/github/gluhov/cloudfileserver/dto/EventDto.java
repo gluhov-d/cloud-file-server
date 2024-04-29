@@ -7,6 +7,6 @@ import lombok.Data;
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class EventDto extends BaseDto{
-    private UserDto user;
-    private FileEntityDto file;
+    private Long userId;
+    private Long fileId;
 }

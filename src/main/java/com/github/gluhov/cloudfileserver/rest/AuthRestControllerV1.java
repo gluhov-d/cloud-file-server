@@ -5,18 +5,20 @@ import com.github.gluhov.cloudfileserver.dto.AuthResponseDto;
 import com.github.gluhov.cloudfileserver.dto.UserDto;
 import com.github.gluhov.cloudfileserver.mapper.UserMapper;
 import com.github.gluhov.cloudfileserver.model.User;
-import com.github.gluhov.cloudfileserver.security.CustomPrincipal;
 import com.github.gluhov.cloudfileserver.security.SecurityService;
 import com.github.gluhov.cloudfileserver.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/auth")
+@RequestMapping(value = AuthRestControllerV1.REST_URL)
 public class AuthRestControllerV1 {
+    static final String REST_URL = "/api/v1/auth";
     private final SecurityService securityService;
     private final UserService userService;
     private final UserMapper userMapper;
@@ -39,13 +41,5 @@ public class AuthRestControllerV1 {
                                 .expiresAt(tokenDetails.getExpiresAt())
                                 .build()
                 ));
-    }
-
-    @GetMapping("/info")
-    public Mono<UserDto> getUserInfo(Authentication authentication) {
-        CustomPrincipal customPrincipal = (CustomPrincipal) authentication.getPrincipal();
-
-        return userService.getUserById(customPrincipal.getId())
-                .map(userMapper::map);
     }
 }
