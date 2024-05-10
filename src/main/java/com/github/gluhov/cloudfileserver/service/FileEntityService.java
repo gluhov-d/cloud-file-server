@@ -83,8 +83,8 @@ public class FileEntityService {
 
     }
 
-    public Mono<FileEntityDto> get(long id) {
-        return fileEntityRepository.findById(id).map(fileEntityMapper::map);
+    public Mono<FileEntity> getById(long id) {
+        return fileEntityRepository.findById(id);
     }
 
     public Mono<Void> delete(long id, long modifiedById) {
@@ -98,13 +98,14 @@ public class FileEntityService {
     }
 
 
+    // TO-DO change to query
     public Flux<FileEntity> getAllByUserId(long id) {
         return fileEntityRepository.getAllByUserId(id)
                 .filter(fileEntity -> !fileEntity.getStatus().equals(Status.DELETED));
     }
 
     public Mono<FileEntity> update(FileEntityDto fileEntityDto, long id) {
-        Mono<User> user = userRepository.findById(fileEntityDto.getId());
+        Mono<User> user = userRepository.findById(fileEntityDto.getUserId());
         return user.flatMap(u -> fileEntityRepository.save(
                 FileEntity.builder()
                         .name(fileEntityDto.getName())

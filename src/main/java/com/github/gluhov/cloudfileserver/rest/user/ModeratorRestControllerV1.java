@@ -1,9 +1,6 @@
 package com.github.gluhov.cloudfileserver.rest.user;
 
-import com.github.gluhov.cloudfileserver.dto.UserDto;
-import com.github.gluhov.cloudfileserver.model.User;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,12 +17,19 @@ public class ModeratorRestControllerV1 extends AbstractUserRestControllerV1 {
 
     @GetMapping(value = "/{id}")
     @Override
-    public Mono<ResponseEntity<UserDto>> get(@PathVariable long id) {
+    public Mono<?> get(@PathVariable long id) {
         return super.get(id);
     }
 
     @GetMapping
-    public Flux<User> getAll() {
-        return userService.getAll();
+    public Flux<?> getAll() {
+        return userService.getAll()
+                .flatMap(user -> Mono.just(userMapper.map(user)));
+    }
+
+    @GetMapping("/active")
+    public Flux<?> getAllActive() {
+        return userService.findAllActive()
+                .flatMap(user -> Mono.just(userMapper.map(user)));
     }
 }

@@ -1,7 +1,7 @@
 package com.github.gluhov.cloudfileserver.rest.user;
 
 import com.github.gluhov.cloudfileserver.dto.UserDto;
-import com.github.gluhov.cloudfileserver.model.User;
+import com.github.gluhov.cloudfileserver.mapper.UserMapper;
 import com.github.gluhov.cloudfileserver.security.CustomPrincipal;
 import com.github.gluhov.cloudfileserver.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -22,26 +22,36 @@ public class AdminUserRestControllerV1 extends AbstractUserRestControllerV1 {
     private final UserService userService;
     static final String REST_URL = "/api/v1/admin/users";
 
+    private final UserMapper userMapper;
+
     @GetMapping(value = "/{id}")
     @Override
-    public Mono<ResponseEntity<UserDto>> get(@PathVariable long id) {
+    public Mono<?> get(@PathVariable long id) {
         return super.get(id);
     }
 
     @DeleteMapping(value = "/{id}")
     @Override
-    public Mono<ResponseEntity<Void>> delete(@PathVariable long id, Authentication authentication) {
+    public Mono<?> delete(@PathVariable long id, Authentication authentication) {
         return super.delete(id, authentication);
     }
 
     @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<ResponseEntity<User>> update(@RequestBody UserDto userDto, Authentication authentication) {
+    public Mono<?> update(@RequestBody UserDto userDto, Authentication authentication) {
         CustomPrincipal customPrincipal = (CustomPrincipal) authentication.getPrincipal();
-        return userService.update(userDto, customPrincipal.getId()).map(user -> ResponseEntity.ok().body(user));
+        return userService.update(userMapper.map(userDto), customPrincipal.getId()).map(user -> ResponseEntity.ok().body(userMapper.map(user)));
     }
 
+    // TO-DO change to ResponseEntity
     @GetMapping
-    public Flux<User> getAll() {
-        return userService.getAll();
+    public Flux<?> getAll() {
+        return userService.getAll()
+                .flatMap(user -> Mono.just(userMapper.map(user)));
+    }
+
+    @GetMapping("/active")
+    public Flux<?> getAllActive() {
+        return userService.findAllActive()
+                .flatMap(user -> Mono.just(userMapper.map(user)));
     }
 }

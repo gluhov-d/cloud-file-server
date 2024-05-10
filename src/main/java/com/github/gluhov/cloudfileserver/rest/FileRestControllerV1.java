@@ -1,7 +1,7 @@
 package com.github.gluhov.cloudfileserver.rest;
 
 import com.github.gluhov.cloudfileserver.dto.FileEntityDto;
-import com.github.gluhov.cloudfileserver.model.FileEntity;
+import com.github.gluhov.cloudfileserver.mapper.FileEntityMapper;
 import com.github.gluhov.cloudfileserver.security.CustomPrincipal;
 import com.github.gluhov.cloudfileserver.service.FileEntityService;
 import lombok.RequiredArgsConstructor;
@@ -21,39 +21,37 @@ import reactor.core.publisher.Mono;
 @RestController
 public class FileRestControllerV1 {
 
-    static final String REST_URL = "/api/v1/files";
+    public static final String REST_URL = "/api/v1/files";
     static final String MODERATOR_REST_URL = "/api/v1/moderator/files";
     static final String ADMIN_REST_URL = "/api/v1/admin/files";
 
     private final FileEntityService fileEntityService;
 
+    private final FileEntityMapper fileEntityMapper;
+
     @GetMapping(value = REST_URL + "/{id}")
-    public Mono<ResponseEntity<FileEntityDto>> get(@PathVariable long id) {
-        return fileEntityService.get(id).map(fileEntityDto -> ResponseEntity.ok().body(fileEntityDto));
+    public Mono<?> get(@PathVariable long id) {
+        return fileEntityService.getById(id).map(fileEntity -> ResponseEntity.ok().body(fileEntityMapper.map(fileEntity)));
     }
 
     @GetMapping(value = REST_URL)
-    public Flux<FileEntity> getAll(Authentication authentication){
+    public Flux<?> getAll(Authentication authentication){
         CustomPrincipal customPrincipal = (CustomPrincipal) authentication.getPrincipal();
-        return fileEntityService.getAllByUserId(customPrincipal.getId());
+        return fileEntityService.getAllByUserId(customPrincipal.getId())
+                .flatMap(file -> Mono.just(fileEntityMapper.map(file)));
     }
 
     @PutMapping(value = MODERATOR_REST_URL + "/{id}")
-    public Mono<FileEntity> update(@RequestBody FileEntityDto fileEntityDto, @PathVariable long id, Authentication authentication) {
+    public Mono<?> update(@RequestBody FileEntityDto fileEntityDto, @PathVariable long id, Authentication authentication) {
+        fileEntityDto.setId(id);
         CustomPrincipal customPrincipal = (CustomPrincipal) authentication.getPrincipal();
-        return fileEntityService.update(fileEntityDto, customPrincipal.getId());
+        return fileEntityService.update(fileEntityDto, customPrincipal.getId())
+                .map(file -> ResponseEntity.ok().body(fileEntityMapper.map(file)));
     }
 
-    @DeleteMapping(value = MODERATOR_REST_URL + "/{id}")
+    @DeleteMapping(value = {MODERATOR_REST_URL + "/{id}", ADMIN_REST_URL + "/{id}"})
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Mono<Void> delete(@PathVariable long id, Authentication authentication) {
-        CustomPrincipal customPrincipal = (CustomPrincipal) authentication.getPrincipal();
-        return fileEntityService.delete(id, customPrincipal.getId());
-    }
-
-    @DeleteMapping(value = ADMIN_REST_URL + "/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Mono<Void> deleteById(@PathVariable long id, Authentication authentication) {
+    public Mono<?> delete(@PathVariable long id, Authentication authentication) {
         CustomPrincipal customPrincipal = (CustomPrincipal) authentication.getPrincipal();
         return fileEntityService.delete(id, customPrincipal.getId());
     }

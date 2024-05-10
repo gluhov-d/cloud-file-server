@@ -1,7 +1,7 @@
 package com.github.gluhov.cloudfileserver.rest;
 
 import com.github.gluhov.cloudfileserver.dto.EventDto;
-import com.github.gluhov.cloudfileserver.model.Event;
+import com.github.gluhov.cloudfileserver.mapper.EventMapper;
 import com.github.gluhov.cloudfileserver.security.CustomPrincipal;
 import com.github.gluhov.cloudfileserver.service.EventService;
 import lombok.RequiredArgsConstructor;
@@ -23,42 +23,42 @@ public class EventRestControllerV1 {
 
     private final EventService eventService;
 
+    private final EventMapper eventMapper;
+
+    // TO-DO convert to ResponseEntity
     @GetMapping(value = REST_URL)
-    public Flux<Event> getAll(Authentication authentication) {
+    public Flux<?> getAll(Authentication authentication) {
         CustomPrincipal customPrincipal = (CustomPrincipal) authentication.getPrincipal();
-        return eventService.getAllByUserId(customPrincipal.getId());
+        return eventService.getAllByUserId(customPrincipal.getId())
+                .flatMap(event -> Mono.just(eventMapper.map(event)));
     }
 
     @GetMapping(value = REST_URL + "/{id}")
-    public Mono<ResponseEntity<EventDto>> getById(@PathVariable long id) { return eventService.getById(id).map(eventDto -> ResponseEntity.ok().body(eventDto));}
+    public Mono<?> getById(@PathVariable long id) { return eventService.getById(id).map(event -> ResponseEntity.ok().body(eventMapper.map(event)));}
 
-    @GetMapping(value = ADMIN_REST_URL + "/{id}")
-    public Flux<Event> getAllById(@PathVariable long id) {
-        return eventService.getAllByUserId(id);
+    @GetMapping(value = {ADMIN_REST_URL, MODERATOR_REST_URL})
+    public Flux<?> getAllById(@RequestParam(value = "id", defaultValue = "0") Long id) {
+        if (id != 0) {
+            return eventService.getAllByUserId(id)
+                    .flatMap(event -> Mono.just(eventMapper.map(event)));
+        } else {
+            return Flux.error(new RuntimeException("CFS_BAD_ID"));
+        }
+
     }
 
-    @GetMapping(value = MODERATOR_REST_URL + "/{id}")
-    public Flux<Event> getAllByUserId(@PathVariable long id) {
-        return eventService.getAllByUserId(id);
-    }
-
-    @DeleteMapping(value = MODERATOR_REST_URL + "/{id}")
+    @DeleteMapping(value = { MODERATOR_REST_URL + "/{id}", ADMIN_REST_URL + "/{id}"})
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Mono<Void> delete(@PathVariable long id, Authentication authentication) {
-        CustomPrincipal customPrincipal = (CustomPrincipal) authentication.getPrincipal();
-        return eventService.delete(id, customPrincipal.getId());
-    }
-
-    @DeleteMapping(value = ADMIN_REST_URL + "/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public Mono<Void> deleteById(@PathVariable long id, Authentication authentication) {
+    public Mono<?> delete(@PathVariable long id, Authentication authentication) {
         CustomPrincipal customPrincipal = (CustomPrincipal) authentication.getPrincipal();
         return eventService.delete(id, customPrincipal.getId());
     }
 
     @PutMapping(value = MODERATOR_REST_URL + "/{id}")
-    public Mono<Event> update(@RequestBody EventDto eventDto, @PathVariable Long id, Authentication authentication) {
+    public Mono<?> update(@RequestBody EventDto eventDto, @PathVariable Long id, Authentication authentication) {
+        eventDto.setId(id);
         CustomPrincipal customPrincipal = (CustomPrincipal) authentication.getPrincipal();
-        return eventService.update(eventDto, customPrincipal.getId());
+        return eventService.update(eventMapper.map(eventDto), customPrincipal.getId())
+                .map(event -> ResponseEntity.ok().body(eventMapper.map(event)));
     }
 }

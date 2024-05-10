@@ -1,7 +1,7 @@
 package com.github.gluhov.cloudfileserver.service;
 
-import com.github.gluhov.cloudfileserver.dto.UserDto;
-import com.github.gluhov.cloudfileserver.mapper.UserMapper;
+import com.github.gluhov.cloudfileserver.exception.EntityNotFoundException;
+import com.github.gluhov.cloudfileserver.exception.UserWithUsernameAlreadyExistsException;
 import com.github.gluhov.cloudfileserver.model.Status;
 import com.github.gluhov.cloudfileserver.model.User;
 import com.github.gluhov.cloudfileserver.model.UserRole;
@@ -14,7 +14,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -23,53 +23,75 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    private final UserMapper userMapper;
+    private Mono<Void> checkIfExistsByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .flatMap(user -> {
+                    if (Objects.nonNull(user)) {
+                        return Mono.error(new UserWithUsernameAlreadyExistsException("User with defined username already exists.", "CFS_USER_DUPLICATE_USERNAME"));
+                    }
+                    return Mono.empty();
+                });
+    }
 
     public Mono<User> registerUser(User user) {
-        return userRepository.save(
-                User.builder()
-                        .firstName(user.getFirstName())
-                        .username(user.getUsername())
-                        .lastName(user.getLastName())
-                        .createdBy("1")
-                        .modifiedBy("1")
-                        .password(passwordEncoder.encode(user.getPassword()))
-                        .role(UserRole.USER)
-                        .enabled(true)
-                        .createdAt(LocalDateTime.now())
-                        .updatedAt(LocalDateTime.now())
-                        .status(Status.ACTIVE)
-                        .build()
-        ).doOnSuccess(u -> log.info("IN registerUser - user: {} created", u));
+        return checkIfExistsByUsername(user.getUsername())
+                .then(Mono.defer(() -> userRepository.save(
+                        User.builder()
+                                .firstName(user.getFirstName())
+                                .username(user.getUsername())
+                                .lastName(user.getLastName())
+                                .createdBy("")
+                                .modifiedBy("")
+                                .password(passwordEncoder.encode(user.getPassword()))
+                                .role(UserRole.USER)
+                                .enabled(true)
+                                .createdAt(LocalDateTime.now())
+                                .updatedAt(LocalDateTime.now())
+                                .status(Status.ACTIVE)
+                                .build()
+                )));
     }
 
-    public Mono<UserDto> getUserById(Long id) {
-        return userRepository.findById(id).map(userMapper::map);
+    public Mono<User> getUserById(Long id) {
+        return userRepository.findById(id);
     }
 
-    public Mono<Void> deleteById(Long id) { return userRepository.deleteById(id);}
+    public Mono<Void> deleteById(Long id, Long modifiedById) {
+        return userRepository.findById(id)
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("User not found", "CFS_USER_NOT_FOUND")))
+                .flatMap(user -> {
+                    user.setStatus(Status.DELETED);
+                    user.setModifiedBy(String.valueOf(modifiedById));
+                    user.setEnabled(false);
+                    user.setUpdatedAt(LocalDateTime.now());
+                    return userRepository.save(user).then();
+                });
+    }
 
-    public Mono<User> update(UserDto userDto, Long id) {
-        return userRepository.save(
-            User.builder()
-                    .firstName(userDto.getFirstName())
-                    .username(userDto.getUsername())
-                    .lastName(userDto.getLastName())
-                    .modifiedBy(String.valueOf(id))
-                    .updatedAt(LocalDateTime.now())
-                    .status(userDto.getStatus())
-                    .enabled(userDto.isEnabled())
-                    .role(userDto.getRole())
-                    .password(passwordEncoder.encode(userDto.getPassword()))
-                    .build()
-        ).doOnSuccess(u -> log.info("IN update - user: {} updated", u ));
+    public Mono<User> update(User user, Long modifiedById) {
+        return userRepository.findById(user.getId())
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("User not found", "CFS_USER_NOT_FOUND")))
+                .flatMap(u -> userRepository.save(
+                        User.builder()
+                                .firstName(user.getFirstName())
+                                .username(user.getUsername())
+                                .lastName(user.getLastName())
+                                .modifiedBy(String.valueOf(modifiedById))
+                                .updatedAt(LocalDateTime.now())
+                                .status(user.getStatus())
+                                .enabled(user.isEnabled())
+                                .role(user.getRole())
+                                .password(passwordEncoder.encode(user.getPassword()))
+                                .build()
+                ).doOnSuccess(s -> log.info("IN update - user: {} updated", s )));
     }
 
     public Flux<User> getAll() {
+        return userRepository.findAll();
+    }
 
-        return userRepository.findAll().
-                filter(user -> !user.getStatus().equals(Status.DELETED))
-                .sort(Comparator.comparing(User::getLastName).thenComparing(User::getUsername));
+    public Flux<User> findAllActive() {
+        return userRepository.findAllActive();
     }
 
     public Mono<User> getUserByUserName(String username) {
