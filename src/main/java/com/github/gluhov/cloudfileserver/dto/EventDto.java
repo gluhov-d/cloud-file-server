@@ -18,6 +18,7 @@ public class EventDto extends BaseDto{
     private Long fileId;
 
     public EventDto(Event event) {
+        super(event.getId(), event.getStatus(), event.getCreatedAt(), event.getUpdatedAt(), event.getCreatedBy(), event.getModifiedBy());
         this.userId = event.getUserId();
         this.fileId = event.getFileId();
     }

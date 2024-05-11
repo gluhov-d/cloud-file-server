@@ -19,7 +19,7 @@ public class FileEntityDto extends BaseDto{
     private Long userId;
 
     public FileEntityDto(FileEntity file) {
-        super();
+        super(file.getId(), file.getStatus(), file.getCreatedAt(), file.getUpdatedAt(), file.getCreatedBy(), file.getModifiedBy());
         this.location = file.getLocation();
         this.name = file.getName();
         this.userId = file.getUserId();

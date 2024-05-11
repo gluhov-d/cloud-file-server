@@ -56,8 +56,11 @@ dependencies {
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.10.2")
-    testImplementation("org.testcontainers:junit-jupiter:1.19.7")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("io.projectreactor:reactor-test")
+    testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:mysql:1.19.7")
+    testImplementation("org.testcontainers:r2dbc")
 }
 
 tasks.withType<Test> {

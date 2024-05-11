@@ -29,7 +29,7 @@ public class FileRestControllerV1 {
 
     private final FileEntityMapper fileEntityMapper;
 
-    @GetMapping(value = REST_URL + "/{id}")
+    @GetMapping(value = {REST_URL + "/{id}", MODERATOR_REST_URL + "/{id}", ADMIN_REST_URL + "/{id}"})
     public Mono<?> get(@PathVariable long id) {
         return fileEntityService.getById(id).map(fileEntity -> ResponseEntity.ok().body(fileEntityMapper.map(fileEntity)));
     }

@@ -2,10 +2,12 @@ package com.github.gluhov.cloudfileserver.security;
 
 import com.github.gluhov.cloudfileserver.exception.AuthException;
 import com.github.gluhov.cloudfileserver.model.User;
+import com.github.gluhov.cloudfileserver.repository.UserRepository;
 import com.github.gluhov.cloudfileserver.service.UserService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -15,9 +17,11 @@ import java.util.*;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityService {
 
     private final UserService userService;
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${jwt.secret}")

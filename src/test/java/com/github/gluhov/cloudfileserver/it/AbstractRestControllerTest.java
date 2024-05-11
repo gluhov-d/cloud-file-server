@@ -1,4 +1,4 @@
-package com.github.gluhov.cloudfileserver.rest;
+package com.github.gluhov.cloudfileserver.it;
 
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;

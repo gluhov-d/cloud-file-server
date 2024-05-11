@@ -25,6 +25,7 @@ public class UserDto  extends BaseDto{
     private boolean enabled;
 
     public UserDto(User user) {
+        super(user.getId(), user.getStatus(), user.getCreatedAt(), user.getUpdatedAt(), user.getCreatedBy(), user.getModifiedBy());
         this.username = user.getUsername();
         this.password = user.getPassword();
         this.role = user.getRole();
