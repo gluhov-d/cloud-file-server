@@ -13,7 +13,7 @@ import static com.github.gluhov.cloudfileserver.rest.user.UserRestControllerV1.R
 @RestController
 @RequestMapping(value = REST_URL, produces = MediaType.APPLICATION_JSON_VALUE)
 public class UserRestControllerV1 extends AbstractUserRestControllerV1 {
-    static final String REST_URL = "/api/v1/profile";
+    public static final String REST_URL = "/api/v1/profile";
 
     @GetMapping
     public Mono<?> get(Authentication authentication) {

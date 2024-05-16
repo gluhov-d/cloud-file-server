@@ -10,40 +10,39 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 public class EventRestControllerV1 {
-    static final String REST_URL = "/api/v1/events";
-    static final String MODERATOR_REST_URL = "/api/v1/moderator/events";
-    static final String ADMIN_REST_URL = "/api/v1/admin/events";
+    public static final String REST_URL = "/api/v1/events";
+    public static final String MODERATOR_REST_URL = "/api/v1/moderator/events";
+    public static final String ADMIN_REST_URL = "/api/v1/admin/events";
 
     private final EventService eventService;
 
     private final EventMapper eventMapper;
 
-    // TO-DO convert to ResponseEntity
     @GetMapping(value = REST_URL)
-    public Flux<?> getAll(Authentication authentication) {
+    public Mono<?> getAll(Authentication authentication) {
         CustomPrincipal customPrincipal = (CustomPrincipal) authentication.getPrincipal();
         return eventService.getAllByUserId(customPrincipal.getId())
-                .flatMap(event -> Mono.just(eventMapper.map(event)));
+                .map(eventMapper::map)
+                .collectList()
+                .flatMap(eventDtos -> Mono.just(ResponseEntity.ok().body(eventDtos)));
     }
 
     @GetMapping(value = REST_URL + "/{id}")
     public Mono<?> getById(@PathVariable long id) { return eventService.getById(id).map(event -> ResponseEntity.ok().body(eventMapper.map(event)));}
 
-    @GetMapping(value = {ADMIN_REST_URL, MODERATOR_REST_URL})
-    public Flux<?> getAllById(@RequestParam(value = "id", defaultValue = "0") Long id) {
-        if (id != 0) {
-            return eventService.getAllByUserId(id)
-                    .flatMap(event -> Mono.just(eventMapper.map(event)));
-        } else {
-            return Flux.error(new RuntimeException("CFS_BAD_ID"));
-        }
+    @GetMapping(value = {ADMIN_REST_URL + "/{id}/all", MODERATOR_REST_URL + "/{id}/all"})
+    public Mono<?> getAllById(@PathVariable long id) {
+        return eventService.getAllByUserId(id)
+                .map(eventMapper::map)
+                .collectList()
+                .flatMap(eventDtos ->Mono.just(ResponseEntity.ok().body(eventDtos)));
+
 
     }
 

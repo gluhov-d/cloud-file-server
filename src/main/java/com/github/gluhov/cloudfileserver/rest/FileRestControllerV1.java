@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -22,8 +21,8 @@ import reactor.core.publisher.Mono;
 public class FileRestControllerV1 {
 
     public static final String REST_URL = "/api/v1/files";
-    static final String MODERATOR_REST_URL = "/api/v1/moderator/files";
-    static final String ADMIN_REST_URL = "/api/v1/admin/files";
+    public static final String MODERATOR_REST_URL = "/api/v1/moderator/files";
+    public static final String ADMIN_REST_URL = "/api/v1/admin/files";
 
     private final FileEntityService fileEntityService;
 
@@ -35,17 +34,27 @@ public class FileRestControllerV1 {
     }
 
     @GetMapping(value = REST_URL)
-    public Flux<?> getAll(Authentication authentication){
+    public Mono<?> getAll(Authentication authentication){
         CustomPrincipal customPrincipal = (CustomPrincipal) authentication.getPrincipal();
         return fileEntityService.getAllByUserId(customPrincipal.getId())
-                .flatMap(file -> Mono.just(fileEntityMapper.map(file)));
+                .map(fileEntityMapper::map)
+                .collectList()
+                .flatMap(fileEntityDtos -> Mono.just(ResponseEntity.ok().body(fileEntityDtos)));
     }
 
-    @PutMapping(value = MODERATOR_REST_URL + "/{id}")
+    @GetMapping(value = {ADMIN_REST_URL + "/{id}/all", MODERATOR_REST_URL + "/{id}/all"})
+    public Mono<?> getAll(@PathVariable long id){
+        return fileEntityService.getAllByUserId(id)
+                .map(fileEntityMapper::map)
+                .collectList()
+                .flatMap(fileEntityDtos -> Mono.just(ResponseEntity.ok().body(fileEntityDtos)));
+    }
+
+    @PutMapping(value = { MODERATOR_REST_URL + "/{id}", ADMIN_REST_URL + "/{id}"})
     public Mono<?> update(@RequestBody FileEntityDto fileEntityDto, @PathVariable long id, Authentication authentication) {
         fileEntityDto.setId(id);
         CustomPrincipal customPrincipal = (CustomPrincipal) authentication.getPrincipal();
-        return fileEntityService.update(fileEntityDto, customPrincipal.getId())
+        return fileEntityService.update(fileEntityMapper.map(fileEntityDto), customPrincipal.getId())
                 .map(file -> ResponseEntity.ok().body(fileEntityMapper.map(file)));
     }
 
@@ -57,7 +66,7 @@ public class FileRestControllerV1 {
     }
 
     @PostMapping(value = REST_URL+ "/")
-    public Mono<ResponseEntity<FileEntityDto>> upload(@RequestPart("file") Mono<FilePart> filePart, Authentication authentication) {
+    public Mono<?> upload(@RequestPart("file") Mono<FilePart> filePart, Authentication authentication) {
         CustomPrincipal customPrincipal = (CustomPrincipal) authentication.getPrincipal();
         return filePart.flatMap(f -> fileEntityService.uploadFileToS3(f, customPrincipal.getId())).map(fileEntityDto -> ResponseEntity.ok().body(fileEntityDto));
     }

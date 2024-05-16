@@ -10,6 +10,6 @@ public interface UserRepository extends R2dbcRepository<User, Long> {
 
     Mono<User> findByUsername(String username);
 
-    @Query("SELECT u FROM users u WHERE status = 'ACTIVE'")
+    @Query("SELECT * FROM users u WHERE status = 'ACTIVE'")
     Flux<User> findAllActive();
 }

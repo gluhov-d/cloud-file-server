@@ -6,6 +6,6 @@ import org.springframework.data.r2dbc.repository.R2dbcRepository;
 import reactor.core.publisher.Flux;
 
 public interface EventRepository extends R2dbcRepository<Event, Long> {
-    @Query("SELECT e FROM events e WHERE e.status = 'ACTIVE' AND e.user_id = ?1")
-    Flux<Event> getAllByUserId(Long id);
+    @Query("SELECT * FROM events e WHERE e.status = 'ACTIVE' AND e.user_id = :1")
+    Flux<Event> getAllActiveByUserId(Long id);
 }

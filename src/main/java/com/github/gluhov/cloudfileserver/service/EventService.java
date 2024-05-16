@@ -19,15 +19,15 @@ public class EventService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
 
-
     public Flux<Event> getAllByUserId(Long id) {
         return userRepository.findById(id)
                 .switchIfEmpty(Mono.error(new EntityNotFoundException("User not found", "CFS_USER_NOT_FOUND")))
-                .flatMapMany(u -> eventRepository.getAllByUserId(u.getId()));
+                .flatMapMany(u -> eventRepository.getAllActiveByUserId(u.getId()));
     }
 
     public Mono<Event> getById(Long id) {
-        return eventRepository.findById(id);
+        return eventRepository.findById(id)
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("Event not found", "CFS_EVENT_NOT_FOUND")));
     }
 
     public Mono<Void> delete(Long id, Long modifiedById) {
@@ -42,14 +42,14 @@ public class EventService {
     }
 
     public Mono<Event> update(Event event, Long modifiedById) {
-        return userRepository.findById(event.getUserId())
+        return eventRepository.findById(event.getId())
                 .switchIfEmpty(Mono.error(new EntityNotFoundException("Event not found", "CFS_EVENT_NOT_FOUND")))
-                .flatMap(e -> eventRepository.save(
-                        Event.builder()
-                                .updatedAt(LocalDateTime.now())
-                                .modifiedBy(String.valueOf(modifiedById))
-                                .status(event.getStatus())
-                                .build()
-                ));
+                .flatMap(e -> {
+                    e.setUpdatedAt(LocalDateTime.now());
+                    e.setModifiedBy(String.valueOf(modifiedById));
+                    e.setStatus(event.getStatus());
+                    return eventRepository.save(e);
+                })
+                .onErrorResume(error -> Mono.error(new RuntimeException(error.getMessage())));
     }
 }

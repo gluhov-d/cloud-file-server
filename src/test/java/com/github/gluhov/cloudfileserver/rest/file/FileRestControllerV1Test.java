@@ -19,6 +19,8 @@ import com.github.gluhov.cloudfileserver.security.AuthenticationManager;
 import com.github.gluhov.cloudfileserver.security.SecurityService;
 import com.github.gluhov.cloudfileserver.service.FileEntityService;
 import com.github.gluhov.cloudfileserver.service.UserService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
@@ -60,9 +62,6 @@ class FileRestControllerV1Test {
     private UserRepository userRepository;
 
     @MockBean
-    private UserService userService;
-
-    @MockBean
     private UserMapper userMapper;
 
     @MockBean
@@ -76,6 +75,7 @@ class FileRestControllerV1Test {
 
     private String token;
 
+    @BeforeEach
     public void setUp() {
         if ( token == null) {
             AuthRequestDto dto = new AuthRequestDto();
@@ -112,17 +112,15 @@ class FileRestControllerV1Test {
         }
     }
 
+    @Test
     public void get() {
         FileEntityDto fileEntityDto = new FileEntityDto(fileUser);
 
         BDDMockito.given(userRepository.findByUsername(user.getUsername()))
                 .willReturn(Mono.just(user));
 
-        BDDMockito.given(userService.getUserById(fileUser.getUserId()))
-                        .willReturn(Mono.just(user));
-
-        BDDMockito.given(userService.getUserByUserName(user.getUsername()))
-                        .willReturn(Mono.just(user));
+        BDDMockito.given(userRepository.findById(user.getId()))
+                .willReturn(Mono.just(user));
 
         BDDMockito.given(fileEntityMapper.map((FileEntity) any()))
                 .willReturn(fileEntityDto);
@@ -130,12 +128,18 @@ class FileRestControllerV1Test {
         BDDMockito.given(fileEntityRepository.findById(fileUser.getId()))
                 .willReturn(Mono.just(fileUser));
 
-        webTestClient.get()
+        WebTestClient.ResponseSpec resp = webTestClient.get()
                 .uri(REST_URL + "/" +fileUser.getId())
                 .headers(headers -> headers.setBearerAuth(token))
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(FileEntityDto.class)
-                .isEqualTo(fileEntityDto);
+                .exchange();
+
+        resp.expectStatus().isOk()
+                .expectBody()
+                .consumeWith(System.out::println)
+                .jsonPath("$.body.id").isEqualTo(fileUser.getId())
+                .jsonPath("$.body.location").isEqualTo(fileUser.getLocation())
+                .jsonPath("$.body.created_by").isEqualTo(fileUser.getCreatedBy())
+                .jsonPath("$.body.modified_by").isEqualTo(fileUser.getModifiedBy())
+                .jsonPath("$.body.name").isEqualTo(fileUser.getName());
     }
 }

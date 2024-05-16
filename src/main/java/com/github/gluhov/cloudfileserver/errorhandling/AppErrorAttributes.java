@@ -2,6 +2,7 @@ package com.github.gluhov.cloudfileserver.errorhandling;
 
 import com.github.gluhov.cloudfileserver.exception.ApiException;
 import com.github.gluhov.cloudfileserver.exception.AuthException;
+import com.github.gluhov.cloudfileserver.exception.EntityNotFoundException;
 import com.github.gluhov.cloudfileserver.exception.UnauthorizedException;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
@@ -39,13 +40,19 @@ public class AppErrorAttributes extends DefaultErrorAttributes {
             errorMap.put("code", ((ApiException) error).getErrorCode());
             errorMap.put("message", error.getMessage());
             errorList.add(errorMap);
+        } else if (error instanceof EntityNotFoundException) {
+            status = HttpStatus.NOT_FOUND;
+            var errorMap = new LinkedHashMap<String, Object>();
+            errorMap.put("code", ((EntityNotFoundException) error).getErrorCode());
+            errorMap.put("Message", error.getMessage());
+            errorList.add(errorMap);
         } else if (error instanceof ApiException) {
             status = HttpStatus.BAD_REQUEST;
             var errorMap = new LinkedHashMap<String, Object>();
             errorMap.put("code", ((ApiException) error).getErrorCode());
             errorMap.put("message", error.getMessage());
             errorList.add(errorMap);
-        } else {
+        }  else {
             status = HttpStatus.INTERNAL_SERVER_ERROR;
             var message = error.getMessage();
             if (message == null)

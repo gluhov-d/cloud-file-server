@@ -1,15 +1,15 @@
-package com.github.gluhov.cloudfileserver.it.file;
+package com.github.gluhov.cloudfileserver.it.event;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.gluhov.cloudfileserver.config.MySqlTestContainerConfig;
 import com.github.gluhov.cloudfileserver.dto.AuthRequestDto;
-import com.github.gluhov.cloudfileserver.dto.FileEntityDto;
+import com.github.gluhov.cloudfileserver.dto.EventDto;
 import com.github.gluhov.cloudfileserver.it.AbstractRestControllerTest;
 import com.github.gluhov.cloudfileserver.model.Status;
 import com.github.gluhov.cloudfileserver.rest.AuthRestControllerV1;
-import com.github.gluhov.cloudfileserver.rest.FileRestControllerV1;
+import com.github.gluhov.cloudfileserver.rest.EventRestControllerV1;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,16 +18,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Mono;
 
-import static com.github.gluhov.cloudfileserver.rest.file.FileEntityTestData.FILE_NOT_FOUND_ID;
-import static com.github.gluhov.cloudfileserver.rest.file.FileEntityTestData.fileUser;
+import static com.github.gluhov.cloudfileserver.rest.event.EventTestData.EVENT_NOT_FOUND_ID;
+import static com.github.gluhov.cloudfileserver.rest.event.EventTestData.eventUser;
 import static com.github.gluhov.cloudfileserver.rest.user.UserTestData.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -35,11 +32,14 @@ import static com.github.gluhov.cloudfileserver.rest.user.UserTestData.*;
 @Import({MySqlTestContainerConfig.class})
 @TestInstance(TestInstance.Lifecycle.PER_METHOD)
 @ActiveProfiles("test")
-public class ItFIleRestControllerV1Test extends AbstractRestControllerTest {
+public class ItEventRestControllerV1Test extends AbstractRestControllerTest {
 
-    private static final String REST_URL = FileRestControllerV1.REST_URL;
-    private static final String ADMIN_URL = FileRestControllerV1.ADMIN_REST_URL;
-    private static final String MODERATOR_URL = FileRestControllerV1.MODERATOR_REST_URL;
+    private final String REST_URL = EventRestControllerV1.REST_URL;
+
+    private final String MODERATOR_REST_URL = EventRestControllerV1.MODERATOR_REST_URL;
+
+    private final String ADMIN_REST_URL = EventRestControllerV1.ADMIN_REST_URL;
+
     private static final String LOGIN_URL = AuthRestControllerV1.REST_URL;
 
     @Autowired
@@ -90,29 +90,28 @@ public class ItFIleRestControllerV1Test extends AbstractRestControllerTest {
         }
     }
 
+
     @Test
-    @DisplayName("Test file entity get info functionality")
-    public void givenFileId_whenGetFile_thenSuccessResponse() {
+    @DisplayName("Test get event by user functionality")
+    void givenEventId_whenGetEvent_thenSuccessResponse() {
         WebTestClient.ResponseSpec resp = webTestClient.get()
-                .uri(REST_URL + "/" + fileUser.getId())
+                .uri(REST_URL + "/" + eventUser.getId())
                 .headers(headers -> headers.setBearerAuth(token))
                 .exchange();
 
         resp.expectStatus().isOk()
                 .expectBody()
-                .consumeWith(System.out::println)
-                .jsonPath("$.body.id").isEqualTo(fileUser.getId())
-                .jsonPath("$.body.created_by").isEqualTo(fileUser.getCreatedBy())
-                .jsonPath("$.body.location").isEqualTo(fileUser.getLocation())
-                .jsonPath("$.body.name").isEqualTo(fileUser.getName())
-                .jsonPath("$.body.user_id").isEqualTo(fileUser.getUserId());
+                .consumeWith(System.out::print)
+                .jsonPath("$.body.id").isEqualTo(eventUser.getId())
+                .jsonPath("$.body.user_id").isEqualTo(eventUser.getUserId())
+                .jsonPath("$.body.file_id").isEqualTo(eventUser.getFileId());
     }
 
     @Test
-    @DisplayName("Test file entity get not found id info functionality")
-    public void givenFileId_whenGetFile_thenNotFoundResponse() {
+    @DisplayName("Test event get not found id info functionality")
+    public void givenEventId_whenGetEvent_thenNotFoundResponse() {
         WebTestClient.ResponseSpec resp = webTestClient.get()
-                .uri(REST_URL + "/" + FILE_NOT_FOUND_ID)
+                .uri(REST_URL + "/" + EVENT_NOT_FOUND_ID)
                 .headers(headers -> headers.setBearerAuth(token))
                 .exchange();
 
@@ -122,11 +121,11 @@ public class ItFIleRestControllerV1Test extends AbstractRestControllerTest {
     }
 
     @Test
-    @DisplayName("Test get all file entity functionality")
-    public void givenPrincipals_whenGetAllFiles_thenSuccessResponse() {
+    @DisplayName("Test get all events functionality")
+    public void givenPrincipals_whenGetAllEvents_thenSuccessResponse() {
         WebTestClient.ResponseSpec resp = webTestClient.get()
                 .uri(REST_URL)
-                .headers(headers -> headers.setBearerAuth(token))
+                .headers(headers -> headers.setBearerAuth(adminToken))
                 .exchange();
 
         resp.expectStatus().isOk()
@@ -136,10 +135,10 @@ public class ItFIleRestControllerV1Test extends AbstractRestControllerTest {
     }
 
     @Test
-    @DisplayName("Test get all file entity for user functionality")
+    @DisplayName("Test get all events for user by adminfunctionality")
     public void givenUserId_whenGetAllFilesByAdmin_thenSuccessResponse() {
         WebTestClient.ResponseSpec resp = webTestClient.get()
-                .uri(ADMIN_URL + "/" + user.getId() + "/all")
+                .uri(ADMIN_REST_URL + "/" + user.getId() + "/all")
                 .headers(headers -> headers.setBearerAuth(adminToken))
                 .exchange();
 
@@ -150,10 +149,10 @@ public class ItFIleRestControllerV1Test extends AbstractRestControllerTest {
     }
 
     @Test
-    @DisplayName("Test get all file entity for user by moderator functionality")
+    @DisplayName("Test get all events for user by moderator functionality")
     public void givenUserId_whenGetAllFilesByModerator_thenSuccessResponse() {
         WebTestClient.ResponseSpec resp = webTestClient.get()
-                .uri(MODERATOR_URL + "/" + admin.getId() + "/all")
+                .uri(MODERATOR_REST_URL + "/" + admin.getId() + "/all")
                 .headers(headers -> headers.setBearerAuth(moderatorToken))
                 .exchange();
 
@@ -164,10 +163,10 @@ public class ItFIleRestControllerV1Test extends AbstractRestControllerTest {
     }
 
     @Test
-    @DisplayName("Test delete file by moderator entity functionality")
-    public void givenFileId_whenDeleteFileByModerator_thenSuccessResponse() {
+    @DisplayName("Test delete event by moderator functionality")
+    public void givenEventId_whenDeleteEventByModerator_thenSuccessResponse() {
         WebTestClient.ResponseSpec resp = webTestClient.delete()
-                .uri(MODERATOR_URL + "/" + fileUser.getId())
+                .uri(MODERATOR_REST_URL + "/" + eventUser.getId())
                 .headers(headers -> headers.setBearerAuth(moderatorToken))
                 .exchange();
 
@@ -175,10 +174,10 @@ public class ItFIleRestControllerV1Test extends AbstractRestControllerTest {
     }
 
     @Test
-    @DisplayName("Test delete file by admin entity functionality")
-    public void givenFileId_whenDeleteFileByAdmin_ThenSuccessResponse() {
+    @DisplayName("Test delete event by admin functionality")
+    public void givenEventId_whenDeleteEventByAdmin_thenSuccessResponse() {
         WebTestClient.ResponseSpec resp = webTestClient.delete()
-                .uri(ADMIN_URL + "/" + user.getId())
+                .uri(ADMIN_REST_URL + "/" + eventUser.getId())
                 .headers(headers -> headers.setBearerAuth(adminToken))
                 .exchange();
 
@@ -186,15 +185,15 @@ public class ItFIleRestControllerV1Test extends AbstractRestControllerTest {
     }
 
     @Test
-    @DisplayName("Test update file entity by moderator functionality")
-    public void givenFileId_whenUpdateFileByModerator_thenSuccessResponse() {
-        FileEntityDto fileEntityDto = new FileEntityDto();
-        fileEntityDto.setStatus(Status.DELETED);
+    @DisplayName("Test update event by moderator functionality")
+    public void givenEventDto_whenUpdateEventByModerator_thenSuccessResponse() {
+        EventDto eventDto = new EventDto();
+        eventDto.setStatus(Status.DELETED);
         WebTestClient.ResponseSpec resp = webTestClient.put()
-                .uri(MODERATOR_URL + "/" + fileUser.getId())
+                .uri(MODERATOR_REST_URL + "/" + eventUser.getId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .headers(headers -> headers.setBearerAuth(moderatorToken))
-                .bodyValue(fileEntityDto)
+                .bodyValue(eventDto)
                 .exchange();
 
         resp.expectStatus().isOk()
@@ -203,43 +202,4 @@ public class ItFIleRestControllerV1Test extends AbstractRestControllerTest {
                 .jsonPath("$.body.modified_by").isEqualTo(moderator.getId());
     }
 
-    @Test
-    @DisplayName("Test update file entity by admin functionality")
-    public void givenFileId_whenUpdateFileByAdmin_thenSuccessResponse() {
-        FileEntityDto fileEntityDto = new FileEntityDto();
-        fileEntityDto.setStatus(Status.DELETED);
-        WebTestClient.ResponseSpec resp = webTestClient.put()
-                .uri(ADMIN_URL + "/" + fileUser.getId())
-                .contentType(MediaType.APPLICATION_JSON)
-                .headers(headers -> headers.setBearerAuth(adminToken))
-                .bodyValue(fileEntityDto)
-                .exchange();
-
-        resp.expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.body.status").isEqualTo("DELETED")
-                .jsonPath("$.body.modified_by").isEqualTo(admin.getId());
-    }
-
-
-    @Test
-    @DisplayName("Test uploading file functionality")
-    public void givenFile_whenUploadFile_thenSuccessResponse() {
-        MultipartBodyBuilder multipartBodyBuilder = new MultipartBodyBuilder();
-        multipartBodyBuilder.part("file", new ClassPathResource("test.txt"))
-                .contentType(MediaType.MULTIPART_FORM_DATA);
-
-        WebTestClient.ResponseSpec resp = webTestClient.post()
-                .uri(REST_URL + "/")
-                .contentType(MediaType.MULTIPART_FORM_DATA)
-                .headers(headers -> headers.setBearerAuth(token))
-                .body(BodyInserters.fromMultipartData(multipartBodyBuilder.build()))
-                .exchange();
-
-        resp.expectStatus().isOk()
-                .expectBody()
-                .consumeWith(System.out::print)
-                .jsonPath("$.body.location").isNotEmpty()
-                .jsonPath("$.body.userId").isEqualTo(user.getId());
-    }
 }

@@ -9,7 +9,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import static com.github.gluhov.cloudfileserver.rest.user.AdminUserRestControllerV1.REST_URL;
@@ -42,16 +41,19 @@ public class AdminUserRestControllerV1 extends AbstractUserRestControllerV1 {
         return userService.update(userMapper.map(userDto), customPrincipal.getId()).map(user -> ResponseEntity.ok().body(userMapper.map(user)));
     }
 
-    // TO-DO change to ResponseEntity
     @GetMapping
-    public Flux<?> getAll() {
+    public Mono<?> getAll() {
         return userService.getAll()
-                .flatMap(user -> Mono.just(userMapper.map(user)));
+                .map(userMapper::map)
+                .collectList()
+                .flatMap(userDtos -> Mono.just(ResponseEntity.ok().body(userDtos)));
     }
 
     @GetMapping("/active")
-    public Flux<?> getAllActive() {
+    public Mono<?> getAllActive() {
         return userService.findAllActive()
-                .flatMap(user -> Mono.just(userMapper.map(user)));
+                .map(userMapper::map)
+                .collectList()
+                .flatMap(userDtos -> Mono.just(ResponseEntity.ok().body(userDtos)));
     }
 }

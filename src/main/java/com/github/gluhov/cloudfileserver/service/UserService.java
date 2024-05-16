@@ -95,6 +95,7 @@ public class UserService {
     }
 
     public Mono<User> getUserByUserName(String username) {
-        return userRepository.findByUsername(username);
+        return userRepository.findByUsername(username)
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("User not found", "CFS_USER_NOT_FOUND")));
     }
 }

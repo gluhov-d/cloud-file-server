@@ -1,12 +1,11 @@
 package com.github.gluhov.cloudfileserver.service;
 
 import com.amazonaws.services.s3.AmazonS3;
-import com.github.gluhov.cloudfileserver.dto.FileEntityDto;
+import com.github.gluhov.cloudfileserver.exception.EntityNotFoundException;
 import com.github.gluhov.cloudfileserver.mapper.FileEntityMapper;
 import com.github.gluhov.cloudfileserver.model.Event;
 import com.github.gluhov.cloudfileserver.model.FileEntity;
 import com.github.gluhov.cloudfileserver.model.Status;
-import com.github.gluhov.cloudfileserver.model.User;
 import com.github.gluhov.cloudfileserver.repository.EventRepository;
 import com.github.gluhov.cloudfileserver.repository.FileEntityRepository;
 import com.github.gluhov.cloudfileserver.repository.UserRepository;
@@ -35,29 +34,23 @@ public class FileEntityService {
 
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
-    private final FileEntityMapper fileEntityMapper;
 
     @Transactional
-    public Mono<FileEntityDto> uploadFileToS3(FilePart filePart, long userId) {
+    public Mono<FileEntity> uploadFileToS3(FilePart filePart, long userId) {
         File file = new File(filePart.filename());
         LocalDateTime now = LocalDateTime.now();
         return filePart.transferTo(file)
-                .then(Mono.fromRunnable(() -> {
-                    amazonS3.putObject(bucket, filePart.filename(), file);
-                    file.delete();
-                }))
                 .then(Mono.defer(() -> {
-                    Mono<String> location = Mono.just(amazonS3.getUrl(bucket, filePart.filename()).toString());
-                    return location.flatMap(locationValue -> fileEntityRepository.save(
+                    return fileEntityRepository.save(
                             FileEntity.builder()
                             .name(filePart.filename())
-                            .createdAt(LocalDateTime.now())
-                            .updatedAt(LocalDateTime.now())
+                            .createdAt(now)
+                            .updatedAt(now)
                             .status(Status.ACTIVE)
                             .modifiedBy(String.valueOf(userId))
                             .createdBy(String.valueOf(userId))
                             .userId(userId)
-                            .location(locationValue)
+                            .location("https://" + bucket + ".s3.amazonaws.com/" + file.getName())
                             .build()
                     ).flatMap(savedFile -> userRepository.findById(userId)
                                     .map(user -> Event.builder()
@@ -74,21 +67,31 @@ public class FileEntityService {
                                         log.error("Error saving event: {}", e.getMessage());
                                         return Mono.error(new RuntimeException("Error saving event"));
                                     })
-                                    .thenReturn(savedFile))
-                                    .map(fileEntityMapper::map)
-                            );
-
-                })).doOnSuccess(f -> log.info("IN uploadFileToS3 - file: {} uploaded", f.getName()))
-                .onErrorResume(e -> Mono.error(new RuntimeException(e.getMessage())));
-
+                                    .thenReturn(savedFile));
+                }))
+                .flatMap(savedFile -> {
+                    amazonS3.putObject(bucket, filePart.filename(), file);
+                    file.delete();
+                    return Mono.just(savedFile);
+                })
+                .doOnSuccess(f -> log.info("IN uploadFileToS3 - file: uploaded"))
+                .onErrorResume(e -> {
+                    log.error("Error occurred during file upload: {}", e.getMessage());
+                    if (file.exists()) {
+                        file.delete();
+                    }
+                    return Mono.error(new RuntimeException("Failed to upload file to S3", e));
+                });
     }
 
     public Mono<FileEntity> getById(long id) {
-        return fileEntityRepository.findById(id);
+        return fileEntityRepository.findById(id)
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("File not found", "CFS_FILE_NOT_FOUND")));
     }
 
     public Mono<Void> delete(long id, long modifiedById) {
         return fileEntityRepository.findById(id)
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("File not found", "CFS_FILE_NOT_FOUND")))
                 .flatMap(file -> {
                     file.setStatus(Status.DELETED);
                     file.setUpdatedAt(LocalDateTime.now());
@@ -97,24 +100,21 @@ public class FileEntityService {
                 }).onErrorResume(error -> Mono.error(new RuntimeException(error.getMessage())));
     }
 
-
-    // TO-DO change to query
     public Flux<FileEntity> getAllByUserId(long id) {
-        return fileEntityRepository.getAllByUserId(id)
-                .filter(fileEntity -> !fileEntity.getStatus().equals(Status.DELETED));
+        return userRepository.findById(id)
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("User not found", "CFS_USER_NOT_FOUND")))
+                .flatMapMany(u -> fileEntityRepository.getAllActiveByUserId(u.getId()));
     }
 
-    public Mono<FileEntity> update(FileEntityDto fileEntityDto, long id) {
-        Mono<User> user = userRepository.findById(fileEntityDto.getUserId());
-        return user.flatMap(u -> fileEntityRepository.save(
-                FileEntity.builder()
-                        .name(fileEntityDto.getName())
-                        .id(fileEntityDto.getId())
-                        .updatedAt(LocalDateTime.now())
-                        .status(fileEntityDto.getStatus())
-                        .modifiedBy(String.valueOf(id))
-                        .userId(fileEntityDto.getUserId())
-                        .build()
-        ));
+    public Mono<FileEntity> update(FileEntity fileEntity, long id) {
+        return fileEntityRepository.findById(fileEntity.getId())
+                .switchIfEmpty(Mono.error(new EntityNotFoundException("File not found", "CFS_FILE_NOT_FOUND")))
+                .flatMap(f -> {
+                    f.setStatus(fileEntity.getStatus());
+                    f.setUpdatedAt(LocalDateTime.now());
+                    f.setModifiedBy(String.valueOf(id));
+                    return fileEntityRepository.save(f);
+                })
+                .onErrorResume(error -> Mono.error(new RuntimeException(error.getMessage())));
     }
 }

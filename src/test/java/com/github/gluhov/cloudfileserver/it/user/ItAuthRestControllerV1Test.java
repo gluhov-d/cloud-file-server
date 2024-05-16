@@ -25,7 +25,7 @@ import static com.github.gluhov.cloudfileserver.rest.user.UserTestData.user;
 @ActiveProfiles("test")
 public class ItAuthRestControllerV1Test extends AbstractRestControllerTest {
 
-    private static final String REST_URL = AuthRestControllerV1.REST_URL;
+    private final String REST_URL = AuthRestControllerV1.REST_URL;
     @Autowired
     private WebTestClient webTestClient;
 

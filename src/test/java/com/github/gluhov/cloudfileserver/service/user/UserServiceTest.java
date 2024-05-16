@@ -48,10 +48,8 @@ class UserServiceTest {
     @Test
     void getUserById() {
         when(userRepository.findById(USER_ID)).thenReturn(Mono.just(user));
-        UserDto userDto = new UserDto(user);
-        when(userMapper.map(user)).thenReturn(userDto);
         userService.getUserById(USER_ID)
-                .subscribe(foundUser -> assertEquals(userDto, foundUser));
+                .subscribe(foundUser -> assertEquals(user, foundUser));
 
         verify(userRepository, times(1)).findById(USER_ID);
     }
