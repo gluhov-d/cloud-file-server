@@ -2,7 +2,6 @@ package com.github.gluhov.cloudfileserver.service;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.github.gluhov.cloudfileserver.exception.EntityNotFoundException;
-import com.github.gluhov.cloudfileserver.mapper.FileEntityMapper;
 import com.github.gluhov.cloudfileserver.model.Event;
 import com.github.gluhov.cloudfileserver.model.FileEntity;
 import com.github.gluhov.cloudfileserver.model.Status;
@@ -17,8 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.time.LocalDateTime;
 
 @Service
@@ -70,15 +72,30 @@ public class FileEntityService {
                                     .thenReturn(savedFile));
                 }))
                 .flatMap(savedFile -> {
-                    amazonS3.putObject(bucket, filePart.filename(), file);
-                    file.delete();
+                    Mono.fromRunnable(() -> {
+                        try {
+                            amazonS3.putObject(bucket, filePart.filename(), file);
+                        } catch (Exception e) {
+                            log.error("Error uploading file to S3: {}", e.getMessage());
+                        }
+                    }).subscribeOn(Schedulers.boundedElastic()).subscribe();
+
+                    Mono.fromRunnable(() -> {
+                        try {
+                            Files.deleteIfExists(file.toPath());
+                        } catch (IOException e) {
+                            log.error("Error deleting tmp file: {}", e.getMessage());
+                        }
+                    }).subscribeOn(Schedulers.boundedElastic()).subscribe();
                     return Mono.just(savedFile);
                 })
-                .doOnSuccess(f -> log.info("IN uploadFileToS3 - file: uploaded"))
+                .doOnSuccess(f -> {
+                    log.info("IN uploadFileToS3 - file: uploaded");
+                })
                 .onErrorResume(e -> {
                     log.error("Error occurred during file upload: {}", e.getMessage());
-                    if (file.exists()) {
-                        file.delete();
+                    if (file.exists() && !file.delete()) {
+                        log.error("Failed to delete temporary file: {}", file.getName());
                     }
                     return Mono.error(new RuntimeException("Failed to upload file to S3", e));
                 });

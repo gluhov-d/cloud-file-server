@@ -29,6 +29,7 @@ import reactor.core.publisher.Mono;
 import static com.github.gluhov.cloudfileserver.rest.file.FileEntityTestData.FILE_NOT_FOUND_ID;
 import static com.github.gluhov.cloudfileserver.rest.file.FileEntityTestData.fileUser;
 import static com.github.gluhov.cloudfileserver.rest.user.UserTestData.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
@@ -226,8 +227,10 @@ public class ItFIleRestControllerV1Test extends AbstractRestControllerTest {
     @DisplayName("Test uploading file functionality")
     public void givenFile_whenUploadFile_thenSuccessResponse() {
         MultipartBodyBuilder multipartBodyBuilder = new MultipartBodyBuilder();
-        multipartBodyBuilder.part("file", new ClassPathResource("test.txt"))
+        multipartBodyBuilder.part("file", new ClassPathResource("PAN.bmp"))
                 .contentType(MediaType.MULTIPART_FORM_DATA);
+
+        long startTime = System.currentTimeMillis();
 
         WebTestClient.ResponseSpec resp = webTestClient.post()
                 .uri(REST_URL + "/")
@@ -236,10 +239,15 @@ public class ItFIleRestControllerV1Test extends AbstractRestControllerTest {
                 .body(BodyInserters.fromMultipartData(multipartBodyBuilder.build()))
                 .exchange();
 
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+
         resp.expectStatus().isOk()
                 .expectBody()
                 .consumeWith(System.out::print)
                 .jsonPath("$.body.location").isNotEmpty()
                 .jsonPath("$.body.userId").isEqualTo(user.getId());
+
+        assertTrue(duration < 5000, "The request should complete within 5 seconds");
     }
 }
